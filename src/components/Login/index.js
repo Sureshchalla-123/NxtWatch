@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import {useState} from 'react'
 import {useHistory} from 'react-router-dom'
 
 import Cookies from 'js-cookie'
@@ -21,63 +21,11 @@ const Login = () => {
   const [userName, setUserName] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isSubmit, setIsSubmit] = useState(false)
   const [showSubmitError, setShowSubmitError] = useState({
     status: false,
     errorMsg: '',
   })
   const history = useHistory()
-
-  const onSubmitSuccess = data => {
-    console.log(data)
-    Cookies.set('jwt_token', data.jwt_token, {
-      expires: 30,
-      path: '/',
-    })
-    history.replace('/')
-  }
-
-  const onSubmitFailure = data => {
-    console.log(data.error_msg)
-    setShowSubmitError({
-      status: true,
-      errorMsg: data.error_msg,
-    })
-  }
-
-  useEffect(() => {
-    if (isSubmit) {
-      const sendData = async () => {
-        try {
-          const url = 'https://apis.ccbp.in/login'
-          const userDetails = {
-            username: userName,
-            password,
-          }
-          const options = {
-            method: 'POST',
-            body: JSON.stringify(userDetails),
-          }
-
-          const response = await fetch(url, options)
-          const data = await response.json()
-          if (response.ok) {
-            console.log(data)
-            onSubmitSuccess(data)
-          } else {
-            console.log(data)
-            onSubmitFailure(data)
-          }
-        } catch (e) {
-          console.log('Error : ', e)
-        } finally {
-          setIsSubmit(false)
-        }
-      }
-
-      sendData()
-    }
-  }, [isSubmit])
 
   const onChangeUserName = event => {
     setUserName(event.target.value)
@@ -91,10 +39,47 @@ const Login = () => {
     setShowPassword(prevState => !prevState)
   }
 
-  const onSubmitLoginForm = event => {
+  const onSubmitLoginForm = async event => {
     event.preventDefault()
-    setIsSubmit(true)
+
+    try {
+      const url = 'https://apis.ccbp.in/login'
+      const userDetails = {
+        username: userName,
+        password,
+      }
+      const options = {
+        method: 'POST',
+        body: JSON.stringify(userDetails),
+      }
+
+      const response = await fetch(url, options)
+      const data = await response.json()
+      if (response.ok) {
+        Cookies.set('jwt_token', data.jwt_token, {
+          expires: 30,
+          path: '/',
+        })
+        history.replace('/')
+      } else {
+        setShowSubmitError({
+          status: true,
+          errorMsg: data.error_msg,
+        })
+      }
+    } catch (e) {
+      console.log('Error : ', e)
+    }
   }
+
+  const checkLogin = () => {
+    const jwtToken = Cookies.get('jwt_token')
+    if (jwtToken !== undefined) {
+      history.replace('/')
+    }
+  }
+
+  checkLogin()
 
   return (
     <LoginContainer>
